@@ -8,7 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="bg-slate-50 min-h-screen font-sans pb-20">
+<body class="bg-slate-50 min-h-screen font-sans pb-24">
 
     <header class="bg-white shadow-sm border-b p-4 mb-6">
         <div class="container mx-auto flex justify-between items-center">
@@ -60,7 +60,7 @@
 
         <div id="contenedor-vendedores" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
 
-        <div class="fixed bottom-6 right-6 flex flex-col space-y-3">
+        <div class="fixed bottom-20 right-6 flex flex-col space-y-3">
             <button onclick="exportarExcel()" title="Exportar a Excel" class="bg-white border-2 border-green-600 text-green-600 w-14 h-14 rounded-full shadow-xl hover:bg-green-50 flex items-center justify-center transition-transform hover:scale-110">
                 <i class="fas fa-file-excel text-xl"></i>
             </button>
@@ -70,13 +70,18 @@
         </div>
     </main>
 
+    <footer class="fixed bottom-0 w-full bg-white border-t p-3 text-center">
+        <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">
+            App desarrollada por <span class="text-blue-600">Vibras Positivas</span> © Derechos de Autor | <i class="fab fa-whatsapp"></i> 3117700431
+        </p>
+    </footer>
+
     <script>
         const META_GLOBAL = 700;
         const UMBRAL_PORCENTAJE = 0.85; 
         const VALOR_CAJA_VEND = 3000;
         const VALOR_CAJA_SUP = 1000;
 
-        // Listado actualizado con Vendedor Oficina
         const vendedores = [
             { n: "Danny", c: 194 }, { n: "Alexander", c: 155 },
             { n: "Juan Quintana", c: 179 }, { n: "Lorenzo", c: 80 },
@@ -98,8 +103,6 @@
                 totalG += actual;
                 const pct = ((actual / v.c) * 100).toFixed(1);
                 const cumple = actual >= (v.c * UMBRAL_PORCENTAJE);
-                
-                // Dinero por vendedor: cajas x $3000 si cumple el 85%
                 const dineroV = cumple ? (actual * VALOR_CAJA_VEND) : 0;
                 totalPlataVendedores += dineroV;
 
@@ -115,7 +118,7 @@
                             <input type="number" value="${actual}" onchange="save('${v.n}', this.value)" 
                                 class="w-16 text-lg font-bold text-blue-600 bg-blue-50 rounded-lg p-1 text-center outline-none">
                             <div class="text-right leading-none">
-                                <p class="text-[9px] text-gray-400 font-bold">META: ${v.c}</p>
+                                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Presupuesto: ${v.c}</p>
                                 <p class="text-xs font-black text-blue-900">${pct}%</p>
                                 <p class="text-[10px] font-bold text-green-600">$${dineroV.toLocaleString('es-CO')}</p>
                             </div>
@@ -126,7 +129,6 @@
                     </div>`;
             });
 
-            // Supervisor gana si total >= 595 (85% de 700)
             const bonoSup = totalG >= (META_GLOBAL * UMBRAL_PORCENTAJE) ? (totalG * VALOR_CAJA_SUP) : 0;
 
             document.getElementById('total-vendido-global').innerText = totalG;
@@ -150,25 +152,28 @@
         function enviarWhatsApp() {
             let t = 0;
             let plataVend = 0;
-            let msg = `*REPORTE ECONÓMICO DISTRILECO - LACTALIS*\n`;
-            msg += `📅 ${new Date().toLocaleString('es-CO')}\n`;
+            let msg = `*DISTRILECO - LACTALIS (CAUCASIA)*\n`;
+            msg += `🕒 ${new Date().toLocaleString('es-CO')}\n`;
             msg += `--------------------------------\n`;
+            msg += `*VENDEDOR | PTA VS REAL | %*\n`;
             
             vendedores.forEach(v => {
                 const act = ventas[v.n] || 0;
                 t += act;
+                const pct = ((act/v.c)*100).toFixed(1);
                 const cumple = act >= (v.c * 0.85);
                 const ganancia = cumple ? (act * 3000) : 0;
                 plataVend += ganancia;
-                msg += `${cumple ? '✅':'⏳'} *${v.n}*: ${act} cjs -> *$${ganancia.toLocaleString('es-CO')}*\n`;
+                msg += `${cumple ? '✅':'⏳'} *${v.n}*: ${v.c} vs ${act} (${pct}%)\n`;
             });
 
             const bonoSup = t >= 595 ? (t * 1000) : 0;
             msg += `--------------------------------\n`;
-            msg += `📦 *TOTAL CAJAS:* ${t}\n`;
+            msg += `📦 *TOTAL CAJAS:* ${t} / 700\n`;
+            msg += `💰 *INC. VENDEDORES:* $${plataVend.toLocaleString('es-CO')}\n`;
             msg += `👤 *INC. SUPERVISOR:* $${bonoSup.toLocaleString('es-CO')}\n`;
-            msg += `💰 *GRAN TOTAL PLAN:* $${(plataVend + bonoSup).toLocaleString('es-CO')}\n`;
-            msg += `\n📍 Caucasia | WhatsApp: 3117700431`;
+            msg += `🚀 *TOTAL A PAGAR:* $${(plataVend + bonoSup).toLocaleString('es-CO')}\n\n`;
+            msg += `_App desarrollada por Vibras Positivas_`;
 
             window.open(`https://wa.me/573117700431?text=${encodeURIComponent(msg)}`, '_blank');
         }
@@ -179,10 +184,11 @@
                 const cumple = act >= (v.c * 0.85);
                 return {
                     VENDEDOR: v.n,
-                    META: v.c,
-                    VENTA_REAL: act,
-                    PORCENTAJE: ((act/v.c)*100).toFixed(1) + '%',
-                    GANANCIA_COP: cumple ? (act * 3000) : 0
+                    PRESUPUESTO: v.c,
+                    EJECUTADO: act,
+                    DIFERENCIA: act - v.c,
+                    CUMPLIMIENTO: ((act/v.c)*100).toFixed(1) + '%',
+                    INCENTIVO_COP: cumple ? (act * 3000) : 0
                 }
             });
             const ws = XLSX.utils.json_to_sheet(data);
