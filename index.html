@@ -7,12 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .progress-bar { transition: width 0.5s ease-in-out; }
-        .card-vendedor:hover { transform: translateY(-3px); transition: 0.3s; }
-    </style>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans">
+<body class="bg-slate-50 min-h-screen font-sans pb-20">
 
     <header class="bg-white shadow-sm border-b p-4 mb-6">
         <div class="container mx-auto flex justify-between items-center">
@@ -28,9 +24,9 @@
         </div>
     </header>
 
-    <main class="container mx-auto px-4 pb-10">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="md:col-span-2 bg-blue-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+    <main class="container mx-auto px-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="lg:col-span-2 bg-blue-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
                 <div class="relative z-10">
                     <h2 class="text-sm uppercase tracking-widest opacity-80 font-bold">Venta Global Compañía</h2>
                     <div class="flex items-baseline space-x-2 mt-2">
@@ -38,26 +34,37 @@
                         <span class="text-xl opacity-60">/ 700 Cajas</span>
                     </div>
                     <div class="w-full bg-blue-800 rounded-full h-4 mt-4 overflow-hidden border border-blue-700">
-                        <div id="barra-global" class="progress-bar bg-green-400 h-full" style="width: 0%"></div>
+                        <div id="barra-global" class="h-full bg-green-400 transition-all duration-500" style="width: 0%"></div>
                     </div>
                 </div>
-                <i class="fas fa-chart-line absolute -right-4 -bottom-4 text-8xl opacity-10"></i>
             </div>
 
-            <div class="bg-white rounded-2xl p-6 border-2 border-blue-100 shadow-sm flex flex-col justify-center text-center">
-                <h3 class="text-gray-500 text-xs font-bold uppercase mb-2">Incentivo Supervisor</h3>
-                <p id="bono-sup-valor" class="text-3xl font-black text-green-600">$0</p>
-                <p class="text-[10px] text-gray-400 mt-2 italic">Aplica desde las 595 cajas (85%)</p>
+            <div class="bg-white rounded-2xl p-6 border-2 border-green-100 shadow-lg">
+                <h3 class="text-gray-500 text-xs font-bold uppercase mb-4 text-center border-b pb-2">Resumen Económico (COP)</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium">Total Vendedores:</span>
+                        <span id="total-dinero-vend" class="font-bold text-blue-700">$0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium">Incentivo Supervisor:</span>
+                        <span id="bono-sup-valor" class="font-bold text-green-600">$0</span>
+                    </div>
+                    <div class="pt-2 border-t flex justify-between items-center">
+                        <span class="text-base font-black">TOTAL PLAN:</span>
+                        <span id="total-plan-dinero" class="text-xl font-black text-slate-800">$0</span>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div id="contenedor-vendedores" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
 
         <div class="fixed bottom-6 right-6 flex flex-col space-y-3">
-            <button onclick="exportarExcel()" class="bg-white border-2 border-green-600 text-green-600 w-14 h-14 rounded-full shadow-xl hover:bg-green-50 flex items-center justify-center transition-all">
+            <button onclick="exportarExcel()" class="bg-white border-2 border-green-600 text-green-600 w-14 h-14 rounded-full shadow-xl hover:bg-green-50 flex items-center justify-center">
                 <i class="fas fa-file-excel text-xl"></i>
             </button>
-            <button onclick="enviarWhatsApp()" class="bg-green-500 text-white w-14 h-14 rounded-full shadow-xl hover:bg-green-600 flex items-center justify-center transition-all">
+            <button onclick="enviarWhatsApp()" class="bg-green-500 text-white w-14 h-14 rounded-full shadow-xl hover:bg-green-600 flex items-center justify-center">
                 <i class="fab fa-whatsapp text-2xl"></i>
             </button>
         </div>
@@ -65,7 +72,8 @@
 
     <script>
         const META_GLOBAL = 700;
-        const UMBRAL_SUPERVISOR = 595; 
+        const UMBRAL_PORCENTAJE = 0.85; 
+        const VALOR_CAJA_VEND = 3000;
         const VALOR_CAJA_SUP = 1000;
 
         const vendedores = [
@@ -77,59 +85,53 @@
 
         let ventas = JSON.parse(localStorage.getItem('v_lactalis_dist')) || {};
 
-        function init() {
-            render();
-            setInterval(updateTime, 1000);
-            updateTime();
-        }
-
-        function updateTime() {
-            const now = new Date();
-            document.getElementById('fecha-actual').innerText = now.toLocaleString('es-CO', { 
-                timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'medium' 
-            });
-        }
-
         function render() {
             const container = document.getElementById('contenedor-vendedores');
             container.innerHTML = '';
             let totalG = 0;
+            let totalPlataVendedores = 0;
 
             vendedores.forEach(v => {
                 const actual = ventas[v.n] || 0;
                 totalG += actual;
                 const pct = ((actual / v.c) * 100).toFixed(1);
-                const cumpleMin = actual >= (v.c * 0.85);
+                const cumple = actual >= (v.c * UMBRAL_PORCENTAJE);
+                
+                // Dinero por vendedor: cajas x $3000 si cumple el 85%
+                const dineroV = cumple ? (actual * VALOR_CAJA_VEND) : 0;
+                totalPlataVendedores += dineroV;
 
                 container.innerHTML += `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 card-vendedor">
-                        <div class="flex justify-between items-start mb-3">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-start mb-2">
                             <span class="font-bold text-gray-700 text-sm uppercase">${v.n}</span>
-                            ${cumpleMin ? '<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">ALCANZADO</span>' : '<span class="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full uppercase italic">En Proceso</span>'}
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cumple ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}">
+                                ${cumple ? 'ALCANZADO' : 'EN PROCESO'}
+                            </span>
                         </div>
                         <div class="flex items-center justify-between mb-2">
                             <input type="number" value="${actual}" onchange="save('${v.n}', this.value)" 
-                                class="w-20 text-xl font-bold text-blue-600 bg-blue-50 border-none rounded-lg p-1 text-center focus:ring-2 focus:ring-blue-400 outline-none">
-                            <div class="text-right">
-                                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Meta: ${v.c}</p>
+                                class="w-16 text-lg font-bold text-blue-600 bg-blue-50 rounded-lg p-1 text-center outline-none">
+                            <div class="text-right leading-none">
+                                <p class="text-[9px] text-gray-400 font-bold">META: ${v.c}</p>
                                 <p class="text-xs font-black text-blue-900">${pct}%</p>
+                                <p class="text-[10px] font-bold text-green-600">$${dineroV.toLocaleString('es-CO')}</p>
                             </div>
                         </div>
-                        <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                            <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style="width: ${Math.min(pct, 100)}%"></div>
+                        <div class="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
+                            <div class="bg-blue-500 h-1 transition-all duration-500" style="width: ${Math.min(pct, 100)}%"></div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
 
-            let bonoSup = 0;
-            if (totalG >= UMBRAL_SUPERVISOR) {
-                bonoSup = (totalG - UMBRAL_SUPERVISOR) * VALOR_CAJA_SUP;
-            }
+            // Supervisor: si total >= 595 (85% de 700), gana $1000 por cada caja vendida
+            const bonoSup = totalG >= (META_GLOBAL * UMBRAL_PORCENTAJE) ? (totalG * VALOR_CAJA_SUP) : 0;
 
             document.getElementById('total-vendido-global').innerText = totalG;
             document.getElementById('barra-global').style.width = `${Math.min((totalG/META_GLOBAL)*100, 100)}%`;
+            document.getElementById('total-dinero-vend').innerText = `$${totalPlataVendedores.toLocaleString('es-CO')}`;
             document.getElementById('bono-sup-valor').innerText = `$${bonoSup.toLocaleString('es-CO')}`;
+            document.getElementById('total-plan-dinero').innerText = `$${(totalPlataVendedores + bonoSup).toLocaleString('es-CO')}`;
         }
 
         function save(n, v) {
@@ -138,44 +140,57 @@
             render();
         }
 
+        function updateTime() {
+            document.getElementById('fecha-actual').innerText = new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'medium' });
+        }
+
         function enviarWhatsApp() {
             let t = 0;
-            let msg = `*DISTRILECO - LACTALIS (CAUCASIA)*\n`;
-            msg += `🕒 ${new Date().toLocaleString('es-CO')}\n`;
-            msg += `----------------------------\n`;
+            let plataVend = 0;
+            let msg = `*REPORTE ECONÓMICO DISTRILECO - LACTALIS*\n`;
+            msg += `📅 ${new Date().toLocaleString('es-CO')}\n`;
+            msg += `--------------------------------\n`;
             
             vendedores.forEach(v => {
                 const act = ventas[v.n] || 0;
                 t += act;
-                const p = ((act/v.c)*100).toFixed(1);
-                const status = act >= (v.c*0.85) ? '✅' : '⏳';
-                msg += `${status} *${v.n}*: ${act}/${v.c} (${p}%)\n`;
+                const cumple = act >= (v.c * 0.85);
+                const ganancia = cumple ? (act * 3000) : 0;
+                plataVend += ganancia;
+                msg += `${cumple ? '✅':'⏳'} *${v.n}*: ${act} cjs -> *$${ganancia.toLocaleString('es-CO')}*\n`;
             });
 
-            const bonoSup = t >= 595 ? (t - 595) * 1000 : 0;
-            msg += `----------------------------\n`;
-            msg += `📦 *TOTAL ACUMULADO:* ${t} cajas\n`;
-            msg += `💰 *BONO SUPERVISOR:* $${bonoSup.toLocaleString('es-CO')}\n`;
-            msg += `📞 WhatsApp: 3117700431`;
+            const bonoSup = t >= 595 ? (t * 1000) : 0;
+            msg += `--------------------------------\n`;
+            msg += `📦 *TOTAL CAJAS:* ${t}\n`;
+            msg += `👤 *INC. SUPERVISOR:* $${bonoSup.toLocaleString('es-CO')}\n`;
+            msg += `💰 *GRAN TOTAL PLAN:* $${(plataVend + bonoSup).toLocaleString('es-CO')}\n`;
+            msg += `\n📍 Caucasia | WhatsApp: 3117700431`;
 
             window.open(`https://wa.me/573117700431?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
         function exportarExcel() {
-            const data = vendedores.map(v => ({
-                VENDEDOR: v.n,
-                META: v.c,
-                VENTA: ventas[v.n] || 0,
-                PORCENTAJE: (((ventas[v.n] || 0)/v.c)*100).toFixed(1) + '%',
-                BONO_3000: (ventas[v.n] || 0) >= (v.c * 0.85) ? 'SÍ' : 'NO'
-            }));
+            const data = vendedores.map(v => {
+                const act = ventas[v.n] || 0;
+                const cumple = act >= (v.c * 0.85);
+                return {
+                    VENDEDOR: v.n,
+                    META: v.c,
+                    VENTA_REAL: act,
+                    PORCENTAJE: ((act/v.c)*100).toFixed(1) + '%',
+                    GANANCIA_COP: cumple ? (act * 3000) : 0
+                }
+            });
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Incentivos");
-            XLSX.writeFile(wb, "Reporte_Lactalis_Caucasia.xlsx");
+            XLSX.writeFile(wb, "Reporte_Lactalis_Plata.xlsx");
         }
 
-        init();
+        setInterval(updateTime, 1000);
+        updateTime();
+        render();
     </script>
 </body>
 </html>
