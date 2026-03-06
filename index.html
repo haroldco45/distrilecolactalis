@@ -65,9 +65,8 @@
 
     <script>
         const META_GLOBAL = 700;
-        const UMBRAL_SUPERVISOR = 595; // 85% de 700
+        const UMBRAL_SUPERVISOR = 595; 
         const VALOR_CAJA_SUP = 1000;
-        const VALOR_BONO_VEND = 3000;
 
         const vendedores = [
             { n: "Danny", c: 194 }, { n: "Alexander", c: 155 },
@@ -99,28 +98,30 @@
             vendedores.forEach(v => {
                 const actual = ventas[v.n] || 0;
                 totalG += actual;
-                const pct = (actual / v.c) * 100;
+                const pct = ((actual / v.c) * 100).toFixed(1);
                 const cumpleMin = actual >= (v.c * 0.85);
 
                 container.innerHTML += `
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 card-vendedor">
                         <div class="flex justify-between items-start mb-3">
                             <span class="font-bold text-gray-700 text-sm uppercase">${v.n}</span>
-                            ${cumpleMin ? '<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">LISTO $3k</span>' : '<span class="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">EN PROCESO</span>'}
+                            ${cumpleMin ? '<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">ALCANZADO</span>' : '<span class="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full uppercase italic">En Proceso</span>'}
                         </div>
                         <div class="flex items-center justify-between mb-2">
                             <input type="number" value="${actual}" onchange="save('${v.n}', this.value)" 
                                 class="w-20 text-xl font-bold text-blue-600 bg-blue-50 border-none rounded-lg p-1 text-center focus:ring-2 focus:ring-blue-400 outline-none">
-                            <span class="text-xs text-gray-400 font-bold">META: ${v.c}</span>
+                            <div class="text-right">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Meta: ${v.c}</p>
+                                <p class="text-xs font-black text-blue-900">${pct}%</p>
+                            </div>
                         </div>
-                        <div class="w-full bg-gray-100 h-1.5 rounded-full">
-                            <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${Math.min(pct, 100)}%"></div>
+                        <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style="width: ${Math.min(pct, 100)}%"></div>
                         </div>
                     </div>
                 `;
             });
 
-            // Lógica Supervisor: 1000 por caja a partir de 595
             let bonoSup = 0;
             if (totalG >= UMBRAL_SUPERVISOR) {
                 bonoSup = (totalG - UMBRAL_SUPERVISOR) * VALOR_CAJA_SUP;
@@ -139,21 +140,23 @@
 
         function enviarWhatsApp() {
             let t = 0;
-            let msg = `*REPORTE INCENTIVOS DISTRILECO - LACTALIS*\n`;
-            msg += `🕒 ${new Date().toLocaleString('es-CO')}\n\n`;
+            let msg = `*DISTRILECO - LACTALIS (CAUCASIA)*\n`;
+            msg += `🕒 ${new Date().toLocaleString('es-CO')}\n`;
+            msg += `----------------------------\n`;
             
             vendedores.forEach(v => {
                 const act = ventas[v.n] || 0;
                 t += act;
-                const p = ((act/v.c)*100).toFixed(0);
-                const status = act >= (v.c*0.85) ? '✅' : '❌';
+                const p = ((act/v.c)*100).toFixed(1);
+                const status = act >= (v.c*0.85) ? '✅' : '⏳';
                 msg += `${status} *${v.n}*: ${act}/${v.c} (${p}%)\n`;
             });
 
             const bonoSup = t >= 595 ? (t - 595) * 1000 : 0;
-            msg += `\n📦 *TOTAL ACUMULADO:* ${t} cajas\n`;
+            msg += `----------------------------\n`;
+            msg += `📦 *TOTAL ACUMULADO:* ${t} cajas\n`;
             msg += `💰 *BONO SUPERVISOR:* $${bonoSup.toLocaleString('es-CO')}\n`;
-            msg += `\n📍 Caucasia | WhatsApp: 3117700431`;
+            msg += `📞 WhatsApp: 3117700431`;
 
             window.open(`https://wa.me/573117700431?text=${encodeURIComponent(msg)}`, '_blank');
         }
@@ -163,13 +166,13 @@
                 VENDEDOR: v.n,
                 META: v.c,
                 VENTA: ventas[v.n] || 0,
-                CUMPLIMIENTO: (((ventas[v.n] || 0)/v.c)*100).toFixed(1) + '%',
-                INCENTIVO: (ventas[v.n] || 0) >= (v.c * 0.85) ? 3000 : 0
+                PORCENTAJE: (((ventas[v.n] || 0)/v.c)*100).toFixed(1) + '%',
+                BONO_3000: (ventas[v.n] || 0) >= (v.c * 0.85) ? 'SÍ' : 'NO'
             }));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Incentivos");
-            XLSX.writeFile(wb, "Plan_Incentivos_Lactalis.xlsx");
+            XLSX.writeFile(wb, "Reporte_Lactalis_Caucasia.xlsx");
         }
 
         init();
