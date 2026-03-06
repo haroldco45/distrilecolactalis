@@ -61,10 +61,10 @@
         <div id="contenedor-vendedores" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
 
         <div class="fixed bottom-6 right-6 flex flex-col space-y-3">
-            <button onclick="exportarExcel()" class="bg-white border-2 border-green-600 text-green-600 w-14 h-14 rounded-full shadow-xl hover:bg-green-50 flex items-center justify-center">
+            <button onclick="exportarExcel()" title="Exportar a Excel" class="bg-white border-2 border-green-600 text-green-600 w-14 h-14 rounded-full shadow-xl hover:bg-green-50 flex items-center justify-center transition-transform hover:scale-110">
                 <i class="fas fa-file-excel text-xl"></i>
             </button>
-            <button onclick="enviarWhatsApp()" class="bg-green-500 text-white w-14 h-14 rounded-full shadow-xl hover:bg-green-600 flex items-center justify-center">
+            <button onclick="enviarWhatsApp()" title="Enviar a WhatsApp" class="bg-green-500 text-white w-14 h-14 rounded-full shadow-xl hover:bg-green-600 flex items-center justify-center transition-transform hover:scale-110">
                 <i class="fab fa-whatsapp text-2xl"></i>
             </button>
         </div>
@@ -76,11 +76,13 @@
         const VALOR_CAJA_VEND = 3000;
         const VALOR_CAJA_SUP = 1000;
 
+        // Listado actualizado con Vendedor Oficina
         const vendedores = [
             { n: "Danny", c: 194 }, { n: "Alexander", c: 155 },
             { n: "Juan Quintana", c: 179 }, { n: "Lorenzo", c: 80 },
             { n: "Roy", c: 45 }, { n: "Argenis", c: 25 },
-            { n: "Ruben Avendaño", c: 12 }, { n: "Juan Zabala", c: 10 }
+            { n: "Ruben Avendaño", c: 12 }, { n: "Juan Zabala", c: 10 },
+            { n: "Oficina", c: 3 }
         ];
 
         let ventas = JSON.parse(localStorage.getItem('v_lactalis_dist')) || {};
@@ -124,7 +126,7 @@
                     </div>`;
             });
 
-            // Supervisor: si total >= 595 (85% de 700), gana $1000 por cada caja vendida
+            // Supervisor gana si total >= 595 (85% de 700)
             const bonoSup = totalG >= (META_GLOBAL * UMBRAL_PORCENTAJE) ? (totalG * VALOR_CAJA_SUP) : 0;
 
             document.getElementById('total-vendido-global').innerText = totalG;
@@ -141,7 +143,8 @@
         }
 
         function updateTime() {
-            document.getElementById('fecha-actual').innerText = new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'medium' });
+            const options = { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'medium' };
+            document.getElementById('fecha-actual').innerText = new Date().toLocaleString('es-CO', options);
         }
 
         function enviarWhatsApp() {
@@ -185,7 +188,7 @@
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Incentivos");
-            XLSX.writeFile(wb, "Reporte_Lactalis_Plata.xlsx");
+            XLSX.writeFile(wb, "Reporte_Lactalis_Caucasia.xlsx");
         }
 
         setInterval(updateTime, 1000);
